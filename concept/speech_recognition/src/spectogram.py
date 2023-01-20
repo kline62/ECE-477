@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sounddevice as sd
 from scipy.io.wavfile import write, read
+import pdb
 
 class spectrogram:
   # Attributes
@@ -30,22 +31,37 @@ class spectrogram:
       print("ERROR: no waveform has been loaded into the spectrogram object")
       return
     # Initialize the spectrogram
-    self._spectro = np.matrix(np.zeros((int(self.T_recording/self.T_eval), self.N)))
+    #self._spectro = np.matrix(np.zeros((int(self.T_recording/self.T_eval), self.N)))
+    self._spectro = np.matrix(np.zeros((int(np.shape(self._waveform)[0]/self.N), int(self.N/2))))
     # Evaluate the dft at timed intervals
     step = int(self.T_eval*self.F_sample)
-    for i in range(int(self.T_recording/self.T_eval)):
-      dft = np.fft.fft(self._waveform[i*step:i*step+self.N],axis=1)
-      if np.shape(dft)[0] != self.N:
+    for i in range(int(np.shape(self._waveform)[0]/(self.N))):
+    #for i in range(int(self.T_recording/self.T_eval)):
+      #dft = np.fft.fft(self._waveform[i*step:i*step+self.N],axis=1)
+      dft = np.fft.fft(self._waveform[i*self.N:i*self.N+self.N],n=self.N*2,axis=0)
+      dft = np.array([20 * np.log10(dft[i]) for i in range(np.shape(dft)[0])])
+      if np.shape(dft)[0] != self.N*2:
         continue
-      self._spectro[i,:] = dft.T
+      self._spectro[i,:] = dft.T[0,:int(self.N/2)]
 
   def plot(self):
     if self._spectro is None:
       print("ERROR: spectrogram has not been evaluated")
       return
+    plt.figure(1)
+    plt.subplot(141)
     plt.pcolormesh(self._spectro.T)
-    #plt.plot(self._waveform)
+    plt.subplot(142)
+    plt.plot(self._waveform)
+    plt.subplot(143)
+    spectrum, freqs, t, im = plt.specgram(np.reshape(self._waveform, (np.shape(self._waveform)[0],)), self.N)
+    plt.subplot(144)
+    plt.plot(self._spectro[50,].T)
+    print(np.shape(spectrum))
+    print(np.shape(self._spectro))
+    print(np.shape(self._waveform))
     plt.show()
+    pdb.set_trace()
 
 def main():
   s = spectrogram(4)
