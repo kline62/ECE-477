@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.stats as sp
 import sounddevice as sd
 from scipy.io.wavfile import write, read
 import pdb
@@ -7,7 +8,7 @@ import pdb
 class spectrogram:
   # Attributes
   # Public
-  F_sample = 44100 # samle rate in Hz
+  F_sample = 7000 # samle rate in Hz
   T_recording = None # duration of recording in seconds
   N = None # points in the DFT
   T_eval = None # Interval to evaluate DFT at in seconds
@@ -32,13 +33,13 @@ class spectrogram:
       return
     # Initialize the spectrogram
     #self._spectro = np.matrix(np.zeros((int(self.T_recording/self.T_eval), self.N)))
-    self._spectro = np.matrix(np.zeros((int(np.shape(self._waveform)[0]/self.N), int(self.N/2))))
+    self._spectro = np.matrix(np.zeros((int(np.shape(self._waveform)[0]*2/self.N), int(self.N/2))))
     # Evaluate the dft at timed intervals
     step = int(self.T_eval*self.F_sample)
-    for i in range(int(np.shape(self._waveform)[0]/(self.N))):
+    for i in range(int(np.shape(self._waveform)[0]*2/(self.N))):
     #for i in range(int(self.T_recording/self.T_eval)):
       #dft = np.fft.fft(self._waveform[i*step:i*step+self.N],axis=1)
-      dft = np.fft.fft(self._waveform[i*self.N:i*self.N+self.N],n=self.N*2,axis=0)
+      dft = np.fft.fft(self._waveform[i*int(self.N/2):i*int(self.N/2)+self.N],n=self.N*2,axis=0)
       dft = np.array([20 * np.log10(dft[i]) for i in range(np.shape(dft)[0])])
       if np.shape(dft)[0] != self.N*2:
         continue
@@ -54,20 +55,36 @@ class spectrogram:
     plt.subplot(142)
     plt.plot(self._waveform)
     plt.subplot(143)
-    spectrum, freqs, t, im = plt.specgram(np.reshape(self._waveform, (np.shape(self._waveform)[0],)), self.N)
+    spectrum, freqs, t, im = plt.specgram(np.reshape(self._waveform, (np.shape(self._waveform)[0],)), self.N) # look for docs on how this works
     plt.subplot(144)
-    plt.plot(self._spectro[50,].T)
+    plt.plot(self._spectro[30,].T)
     print(np.shape(spectrum))
     print(np.shape(self._spectro))
     print(np.shape(self._waveform))
     plt.show()
-    pdb.set_trace()
+  
+  def save_spec(self, filename, start, stop):
+    if self._spectro is None:
+      print("ERROR: spectrogram has not been produced")
+      return
+    np.save(filename, self._spectro[start:stop,:])
+    np.concatenate()
+
+  def create_gaussian(self, filename, start, stop):
+    if self._spectro is None:
+      print("ERROR: spectrogram has not been produced")
+      return
+    
+    
 
 def main():
-  s = spectrogram(4)
+  s = spectrogram(4, N=1024)
   s.record()
   s.eval()
   s.plot()
+  #start = int(input("First index: "))
+  #stop = int(input("Last index: "))
+  #s.save_spec("ah.npy", start, stop)
 
 if __name__ == "__main__":
   main()
