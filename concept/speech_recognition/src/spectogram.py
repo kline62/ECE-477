@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as sp
 import sounddevice as sd
 from scipy.io.wavfile import write, read
+from sklearn.naive_bayes import GaussianNB as gauss
 import pdb
 
 class spectrogram:
@@ -15,6 +16,7 @@ class spectrogram:
   # Private
   _waveform = None # Stored waveform
   _spectro = None # The spectrogram matrix
+  _gnb = None # Gaussian Naive Bayes object
 
   def __init__(self, T_recording, N=512, T_eval=0.0001):
     self.T_recording = T_recording
@@ -68,23 +70,46 @@ class spectrogram:
       print("ERROR: spectrogram has not been produced")
       return
     np.save(filename, self._spectro[start:stop,:])
-    np.concatenate()
+    
 
-  def create_gaussian(self, filename, start, stop):
+  def create_gaussian(self, filenames):
+    data = [np.load(f) for f in filenames]
+    data_arr = data[0]
+    for i in range(len(data)-1):
+      data_arr = np.concatenate((data_arr,data[i+1]))
+
+    classes = []
+    curr_class = 0
+    for d in data:
+      classes = classes + [curr_class for i in range(np.shape(d)[0])]
+      curr_class += 1
+    #print(classes)
+    #print(np.shape(data_arr))
+
+    self._gnb = gauss()
+    self._gnb.fit(data_arr, classes)
+    #print(self._gnb.predict(data_arr[30,:].reshape(1,-1)))
+
+  def predict(self):
     if self._spectro is None:
-      print("ERROR: spectrogram has not been produced")
+      print("ERROR: spectrogram has not been evaluated")
       return
     
-    
+    print(self._gnb.predict(np.asarray(self._spectro)))
+
 
 def main():
   s = spectrogram(4, N=1024)
   s.record()
   s.eval()
-  s.plot()
+  #s.plot()
   #start = int(input("First index: "))
   #stop = int(input("Last index: "))
-  #s.save_spec("ah.npy", start, stop)
+  #filename = input("Filename: ")
+  #s.save_spec(filename, start, stop)
+  s.create_gaussian(("ah.npy", "oh.npy", "silence.npy"))
+  s.predict()
+
 
 if __name__ == "__main__":
   main()
