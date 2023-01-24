@@ -43,6 +43,8 @@ class spectrogram:
       #dft = np.fft.fft(self._waveform[i*step:i*step+self.N],axis=1)
       dft = np.fft.fft(self._waveform[i*int(self.N/2):i*int(self.N/2)+self.N],n=self.N*2,axis=0)
       dft = np.array([20 * np.log10(dft[i]) for i in range(np.shape(dft)[0])])
+      # Normalize
+      dft = dft/max(dft)
       if np.shape(dft)[0] != self.N*2:
         continue
       self._spectro[i,:] = dft.T[0,:int(self.N/2)]
@@ -107,7 +109,7 @@ def main():
   #stop = int(input("Last index: "))
   #filename = input("Filename: ")
   #s.save_spec(filename, start, stop)
-  s.create_gaussian(("ah.npy", "oh.npy", "silence.npy"))
+  s.create_gaussian(("ah.npy", "ss.npy", "silence.npy"))
   s.predict()
 
 
